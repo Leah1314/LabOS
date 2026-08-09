@@ -1,9 +1,132 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "96bfbb03-91db-4712-90bd-8314ee19c8b2",
+  "id": "18b78c9a-52d0-418a-86c2-7a56b8086b14",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "annotations": {
+      "name": "annotations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "experiment_id": {
+          "name": "experiment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sample_id": {
+          "name": "sample_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "measurement_id": {
+          "name": "measurement_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "annotation_type": {
+          "name": "annotation_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "annotations_experiment_idx": {
+          "name": "annotations_experiment_idx",
+          "columns": [
+            "experiment_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "annotations_experiment_id_experiments_id_fk": {
+          "name": "annotations_experiment_id_experiments_id_fk",
+          "tableFrom": "annotations",
+          "tableTo": "experiments",
+          "columnsFrom": [
+            "experiment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "annotations_sample_id_samples_id_fk": {
+          "name": "annotations_sample_id_samples_id_fk",
+          "tableFrom": "annotations",
+          "tableTo": "samples",
+          "columnsFrom": [
+            "sample_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "annotations_measurement_id_measurements_id_fk": {
+          "name": "annotations_measurement_id_measurements_id_fk",
+          "tableFrom": "annotations",
+          "tableTo": "measurements",
+          "columnsFrom": [
+            "measurement_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "annotations_type_check": {
+          "name": "annotations_type_check",
+          "value": "\"annotations\".\"annotation_type\" IN ('contamination','note','flag')"
+        },
+        "annotations_source_check": {
+          "name": "annotations_source_check",
+          "value": "\"annotations\".\"source\" IN ('manual','voice','api')"
+        }
+      }
+    },
     "experiments": {
       "name": "experiments",
       "columns": {
@@ -76,6 +199,13 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -90,10 +220,15 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "experiments_status_check": {
+          "name": "experiments_status_check",
+          "value": "\"experiments\".\"status\" IN ('draft','running','completed')"
+        }
+      }
     },
-    "measurement_revisions": {
-      "name": "measurement_revisions",
+    "measurement_events": {
+      "name": "measurement_events",
       "columns": {
         "id": {
           "name": "id",
@@ -109,18 +244,46 @@
           "notNull": true,
           "autoincrement": false
         },
+        "change_type": {
+          "name": "change_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "previous_value": {
           "name": "previous_value",
           "type": "real",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "revised_value": {
           "name": "revised_value",
           "type": "real",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "previous_status": {
+          "name": "previous_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "revised_status": {
+          "name": "revised_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "source": {
@@ -138,11 +301,19 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "measurement_events_measurement_idx": {
+          "name": "measurement_events_measurement_idx",
+          "columns": [
+            "measurement_id"
+          ],
+          "isUnique": false
+        }
+      },
       "foreignKeys": {
-        "measurement_revisions_measurement_id_measurements_id_fk": {
-          "name": "measurement_revisions_measurement_id_measurements_id_fk",
-          "tableFrom": "measurement_revisions",
+        "measurement_events_measurement_id_measurements_id_fk": {
+          "name": "measurement_events_measurement_id_measurements_id_fk",
+          "tableFrom": "measurement_events",
           "tableTo": "measurements",
           "columnsFrom": [
             "measurement_id"
@@ -156,7 +327,16 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "measurement_events_change_type_check": {
+          "name": "measurement_events_change_type_check",
+          "value": "\"measurement_events\".\"change_type\" IN ('recorded','value_corrected','excluded','restored')"
+        },
+        "measurement_events_source_check": {
+          "name": "measurement_events_source_check",
+          "value": "\"measurement_events\".\"source\" IN ('manual','voice','api')"
+        }
+      }
     },
     "measurements": {
       "name": "measurements",
@@ -177,6 +357,167 @@
         },
         "sample_id": {
           "name": "sample_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "measurement_type": {
+          "name": "measurement_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "unit": {
+          "name": "unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "exclusion_reason": {
+          "name": "exclusion_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recorded_at": {
+          "name": "recorded_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "measurements_experiment_type_idx": {
+          "name": "measurements_experiment_type_idx",
+          "columns": [
+            "experiment_id",
+            "measurement_type"
+          ],
+          "isUnique": false
+        },
+        "measurements_sample_idx": {
+          "name": "measurements_sample_idx",
+          "columns": [
+            "sample_id"
+          ],
+          "isUnique": false
+        },
+        "measurements_request_unique": {
+          "name": "measurements_request_unique",
+          "columns": [
+            "experiment_id",
+            "request_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "measurements_experiment_id_experiments_id_fk": {
+          "name": "measurements_experiment_id_experiments_id_fk",
+          "tableFrom": "measurements",
+          "tableTo": "experiments",
+          "columnsFrom": [
+            "experiment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "measurements_sample_id_samples_id_fk": {
+          "name": "measurements_sample_id_samples_id_fk",
+          "tableFrom": "measurements",
+          "tableTo": "samples",
+          "columnsFrom": [
+            "sample_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "measurements_status_check": {
+          "name": "measurements_status_check",
+          "value": "\"measurements\".\"status\" IN ('valid','excluded')"
+        },
+        "measurements_source_check": {
+          "name": "measurements_source_check",
+          "value": "\"measurements\".\"source\" IN ('manual','voice','api')"
+        }
+      }
+    },
+    "samples": {
+      "name": "samples",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "experiment_id": {
+          "name": "experiment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sample_code": {
+          "name": "sample_code",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -217,27 +558,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "measurement_type": {
-          "name": "measurement_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "value": {
-          "name": "value",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "unit": {
-          "name": "unit",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "status": {
           "name": "status",
           "type": "text",
@@ -245,18 +565,11 @@
           "notNull": true,
           "autoincrement": false
         },
-        "exclusion_reason": {
-          "name": "exclusion_reason",
+        "status_reason": {
+          "name": "status_reason",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
-        },
-        "input_source": {
-          "name": "input_source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
           "autoincrement": false
         },
         "created_at": {
@@ -275,8 +588,116 @@
         }
       },
       "indexes": {
-        "measurements_experiment_idx": {
-          "name": "measurements_experiment_idx",
+        "samples_experiment_idx": {
+          "name": "samples_experiment_idx",
+          "columns": [
+            "experiment_id"
+          ],
+          "isUnique": false
+        },
+        "samples_experiment_code_unique": {
+          "name": "samples_experiment_code_unique",
+          "columns": [
+            "experiment_id",
+            "sample_code"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "samples_experiment_id_experiments_id_fk": {
+          "name": "samples_experiment_id_experiments_id_fk",
+          "tableFrom": "samples",
+          "tableTo": "experiments",
+          "columnsFrom": [
+            "experiment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "samples_status_check": {
+          "name": "samples_status_check",
+          "value": "\"samples\".\"status\" IN ('valid','contaminated','excluded')"
+        }
+      }
+    },
+    "voice_events": {
+      "name": "voice_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "experiment_id": {
+          "name": "experiment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "intent": {
+          "name": "intent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "raw_text": {
+          "name": "raw_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "parsed_payload": {
+          "name": "parsed_payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tool_name": {
+          "name": "tool_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "success": {
+          "name": "success",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "voice_events_experiment_idx": {
+          "name": "voice_events_experiment_idx",
           "columns": [
             "experiment_id"
           ],
@@ -284,9 +705,9 @@
         }
       },
       "foreignKeys": {
-        "measurements_experiment_id_experiments_id_fk": {
-          "name": "measurements_experiment_id_experiments_id_fk",
-          "tableFrom": "measurements",
+        "voice_events_experiment_id_experiments_id_fk": {
+          "name": "voice_events_experiment_id_experiments_id_fk",
+          "tableFrom": "voice_events",
           "tableTo": "experiments",
           "columnsFrom": [
             "experiment_id"
