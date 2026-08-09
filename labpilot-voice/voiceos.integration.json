@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "id": "com.labpilot.voice",
+  "version": "0.1.0",
+  "name": "LabPilot Voice",
+  "summary": "把口述的实验观察变成结构化科研数据，而不是一段转写文字。",
+  "description": "Wet-lab researchers generate data while their hands and attention are occupied. LabPilot Voice turns a spoken observation into a validated row in the experiment database, keeps the provenance of every value, and answers comparisons deterministically. Recording, correcting and flagging all require confirmation; reading never does.",
+  "publisher": {
+    "id": "labpilot",
+    "name": "LabPilot"
+  },
+  "categories": ["research", "science", "productivity"],
+  "runtime": {
+    "kind": "local-mcp",
+    "command": "bash",
+    "args": ["run.sh"]
+  },
+  "permissions": [
+    {
+      "kind": "network",
+      "domains": ["localhost", "127.0.0.1"]
+    }
+  ],
+  "preferences": [
+    {
+      "name": "LABPILOT_BASE_URL",
+      "title": "LabPilot 地址",
+      "description": "LabPilot dashboard 的地址。本地开发用 http://localhost:3000；部署后填线上域名（域名还需加进 manifest 的 network 权限）。",
+      "type": "text",
+      "required": false,
+      "default": "http://localhost:3000",
+      "placeholder": "http://localhost:3000"
+    },
+    {
+      "name": "LABPILOT_EXPERIMENT_ID",
+      "title": "默认实验 ID",
+      "description": "没有显式指定实验时使用的实验。",
+      "type": "text",
+      "required": false,
+      "default": "exp-042",
+      "placeholder": "exp-042"
+    }
+  ],
+  "tools": [
+    {
+      "name": "record_measurement",
+      "title": "记录一条测量",
+      "description": "把研究者口述的一次观察写成结构化测量行：样本、条件、测量类型、数值、单位、浓度。数值和条件在确认卡上可以当场改。Use when the user states an observation such as 样本 B 百分之二菊粉 OD 零点六三 / control point four one / sample C two percent inulin OD point six eight.",
+      "execution": { "mode": "sync", "estimatedDurationMs": 1500 },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sample_code": { "type": "string", "description": "样本编号，例如 A、B、C。可以说「sample B」，会被归一。" },
+          "condition": { "type": "string", "description": "实验条件，例如 Control、1% Inulin、2% Inulin。" },
+          "measurement_type": { "type": "string", "description": "测量类型，例如 OD600。留空则用实验的默认类型。" },
+          "value": { "type": "number", "description": "测量数值，例如 0.63。" },
+          "unit": { "type": "string", "description": "数值单位，例如 OD。可为空。" },
+          "concentration": { "type": "number", "description": "处理浓度的数值部分，例如 2。可为空。" },
+          "concentration_unit": { "type": "string", "description": "浓度单位，例如 %。给了浓度就必须给单位。" },
+          "treatment": { "type": "string", "description": "处理物，例如 Inulin。可为空。" },
+          "allow_duplicate": { "type": "boolean", "description": "确认这确实是一次重复读数，而不是重复提交。默认 false。" }
+        },
+        "required": ["sample_code", "condition", "value"]
+      },
+      "confirmation": {
+        "schemaVersion": 1,
+        "root": {
+          "type": "card",
+          "title": "记录测量",
+          "children": [
+            { "type": "text", "text": "写入实验数据库，来源记为语音。" },
+            { "type": "textField", "bind": "{{sample_code}}", "label": "样本" },
+            { "type": "textField", "bind": "{{condition}}", "label": "条件" },
+            { "type": "textField", "bind": "{{value}}", "label": "数值" },
+            {
+              "type": "keyValue",
+              "rows": [
+                { "label": "来源", "value": "voice（不可伪造）" },
+                { "label": "重复保护", "value": "开启" }
+              ]
+            }
+          ],
+          "footer": [
+            {
+              "type": "actions",
+              "items": [
+                { "label": "取消", "role": "cancel" },
+                { "label": "记录", "role": "confirm", "color": "accent" }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "correct_measurement",
+      "title": "修正一个测量值",
+      "description": "按描述找到之前记录的那条测量并改掉数值，旧值会保留在审计日志里，来源记为语音。如果描述同时命中多条，会把候选列出来反问而不是猜。Use when the user says 刚才那个百分之二其实是零点六三 / actually two percent was point six three / 把 sample B 改成 0.57.",
+      "execution": { "mode": "sync", "estimatedDurationMs": 1500 },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sample_code": { "type": "string", "description": "要修正的样本编号。和 condition 至少给一个。" },
+          "condition": { "type": "string", "description": "要修正的实验条件，例如 2% Inulin。和 sample_code 至少给一个。" },
+          "measurement_type": { "type": "string", "description": "测量类型，用于缩小范围。可为空。" },
+          "value": { "type": "number", "description": "修正后的正确数值。" },
+          "reason": { "type": "string", "description": "为什么要改，例如「重新读了一次比色皿」。可为空。" },
+          "measurement_id": { "type": "string", "description": "已经通过反问确定了具体某一条时填这个。可为空。" }
+        },
+        "required": ["value"]
+      },
+      "confirmation": {
+        "schemaVersion": 1,
+        "root": {
+          "type": "card",
+          "title": "修正测量值",
+          "children": [
+            { "type": "text", "text": "旧值不会被覆盖丢弃，会写入审计日志。" },
+            { "type": "textField", "bind": "{{condition}}", "label": "条件" },
+            { "type": "textField", "bind": "{{value}}", "label": "修正为" },
+            { "type": "textField", "bind": "{{reason}}", "label": "原因" }
+          ],
+          "footer": [
+            {
+              "type": "actions",
+              "items": [
+                { "label": "取消", "role": "cancel" },
+                { "label": "修正", "role": "confirm", "color": "accent" }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "annotate_sample",
+      "title": "标记样本并排除",
+      "description": "给一个样本打上污染/备注/标记，可选择把它整个移出分析。样本的所有读数会一起退出统计，但数值一个都不会被改写。Use when the user says 样本 C 好像污染了把它排除 / sample C looks contaminated exclude it / 给 B 加个备注.",
+      "execution": { "mode": "sync", "estimatedDurationMs": 1500 },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sample_code": { "type": "string", "description": "样本编号，例如 C。" },
+          "annotation_type": {
+            "type": "string",
+            "enum": ["contamination", "note", "flag"],
+            "description": "标记类型：contamination 污染、note 备注、flag 一般标记。"
+          },
+          "content": { "type": "string", "description": "标记内容，例如「浑浊，疑似污染」。" },
+          "exclude_from_analysis": { "type": "boolean", "description": "是否把该样本移出分析。污染通常为 true。" }
+        },
+        "required": ["sample_code", "content"]
+      },
+      "confirmation": {
+        "schemaVersion": 1,
+        "root": {
+          "type": "card",
+          "title": "标记样本",
+          "children": [
+            { "type": "text", "text": "原始数值全部保留，只是不再计入分析。" },
+            { "type": "textField", "bind": "{{sample_code}}", "label": "样本" },
+            { "type": "textField", "bind": "{{content}}", "label": "说明" },
+            { "type": "toggle", "bind": "{{exclude_from_analysis}}", "label": "同时移出分析" }
+          ],
+          "footer": [
+            {
+              "type": "actions",
+              "items": [
+                { "label": "取消", "role": "cancel" },
+                { "label": "标记", "role": "confirm", "color": "accent" }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "start_experiment",
+      "title": "开始一个新实验",
+      "description": "创建一个实验并把它设为当前上下文，之后的短句子（「control 零点四一」）才有得依附。Use when the user says 开始一个测菊粉对双歧杆菌影响的实验 / start an inulin experiment on Bifidobacterium.",
+      "execution": { "mode": "sync", "estimatedDurationMs": 1500 },
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "experiment_code": { "type": "string", "description": "实验编号，例如 EXP-043。" },
+          "title": { "type": "string", "description": "实验标题。" },
+          "organism": { "type": "string", "description": "研究对象，例如 Bifidobacterium。" },
+          "treatment_variable": { "type": "string", "description": "自变量，例如 Inulin concentration。" },
+          "measurement_type": { "type": "string", "description": "主要测量类型，例如 OD600。" }
+        },
+        "required": ["experiment_code", "title", "organism", "treatment_variable", "measurement_type"]
+      },
+      "confirmation": {
+        "schemaVersion": 1,
+        "root": {
+          "type": "card",
+          "title": "开始实验",
+          "children": [
+            { "type": "textField", "bind": "{{experiment_code}}", "label": "编号" },
+            { "type": "textField", "bind": "{{title}}", "label": "标题" },
+            { "type": "textField", "bind": "{{measurement_type}}", "label": "测量类型" }
+          ],
+          "footer": [
+            {
+              "type": "actions",
+              "items": [
+                { "label": "取消", "role": "cancel" },
+                { "label": "开始", "role": "confirm", "color": "accent" }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "query_experiment",
+      "title": "查询实验结果",
+      "description": "对当前实验做确定性分析：按条件求均值并比较，只统计有效读数，被排除的读数和被标记的样本不计入。只读，不修改任何数据。Use when the user asks 哪个条件效果最好 / which condition performed best / 现在平均值多少 / 有多少条被排除了.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "measurement_type": { "type": "string", "description": "只比较这个测量类型。留空则用实验默认类型。" },
+          "direction": {
+            "type": "string",
+            "enum": ["higher", "lower"],
+            "description": "哪个方向算「更好」。生长量是 higher，抑制率之类是 lower。默认 higher。"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "note": "Sample arguments for the VoiceOS Integration Studio preview and for `node verify.mjs`. Utterances are written the way a researcher actually says them, including the filler that normalisation has to survive.",
+  "tools": {
+    "record_measurement": {
+      "utterance": "Sample B, two percent inulin, OD point six three.",
+      "arguments": {
+        "sample_code": "sample B",
+        "condition": "2% Inulin",
+        "measurement_type": "od600",
+        "value": 0.63,
+        "unit": "OD",
+        "concentration": 2,
+        "concentration_unit": "%",
+        "treatment": "Inulin"
+      }
+    },
+    "correct_measurement": {
+      "utterance": "Actually two percent was point six eight.",
+      "arguments": {
+        "condition": "2% Inulin",
+        "value": 0.68,
+        "reason": "re-read the cuvette"
+      }
+    },
+    "annotate_sample": {
+      "utterance": "Sample C looks contaminated. Exclude it.",
+      "arguments": {
+        "sample_code": "C",
+        "annotation_type": "contamination",
+        "content": "Cloudy, likely contaminated",
+        "exclude_from_analysis": true
+      }
+    },
+    "start_experiment": {
+      "utterance": "Start an experiment testing inulin on Bifidobacterium growth.",
+      "arguments": {
+        "experiment_code": "EXP-043",
+        "title": "Inulin effect on Bifidobacterium growth",
+        "organism": "Bifidobacterium",
+        "treatment_variable": "Inulin concentration",
+        "measurement_type": "OD600"
+      }
+    },
+    "query_experiment": {
+      "utterance": "Which condition performed best?",
+      "arguments": { "direction": "higher" }
+    }
+  }
+}
