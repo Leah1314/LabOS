@@ -15,16 +15,12 @@ Voice → structured scientific data → database → live table/chart
       → correction, annotation, and query
 ```
 
-Voice input is not implemented yet. The first product slice proves the shared data pipeline that both manual entry and future voice tools will use:
+Voice capture and the web workspace now share one data pipeline:
 
 ```text
-Manual measurement input
-          │
-          ▼
-Reusable LabPilot services → structured database → measurement table + live chart
-          ▲
-          │
-     VoiceOS tools (later)
+Manual input ─┐
+              ├→ authenticated experiment API → D1 → live table + chart
+VoiceOS MCP ──┘
 ```
 
 ## First working slice
@@ -60,9 +56,9 @@ The correction flow updates sample C from `0.68` to `0.63` in place. Excluded re
 
 > The demo data is synthetic. Results describe observed values only and do not establish biological causality.
 
-## Planned service interface
+## Shared service interface
 
-UI and future VoiceOS integrations will share deterministic service functions:
+The UI and VoiceOS integration share deterministic service functions:
 
 - `createExperiment()`
 - `recordMeasurement()`
@@ -70,19 +66,13 @@ UI and future VoiceOS integrations will share deterministic service functions:
 - `correctMeasurement()`
 - `excludeMeasurement()`
 
-VoiceOS can later expose these services through tools such as:
-
-- `start_experiment`
-- `record_measurement`
-- `correct_measurement`
-- `annotate_sample`
-- `query_experiment`
+The included VoiceOS integration exposes capture, query, comparison, correction, and undo tools. Its writes use a bearer token stored as a VoiceOS password preference; browser requests remain protected by the private Sites identity header.
 
 Database operations remain explicit and schema-bound; natural-language input will never generate arbitrary SQL.
 
 ## Project status
 
-Milestone 1 is implemented as a working EXP-042 experiment workspace with database-backed manual entry, correction history, exclusion and restoration, deterministic analytics, a raw measurement table, and a responsive valid-only chart.
+Milestone 1 is implemented as a working EXP-042 experiment workspace with database-backed manual and VoiceOS entry, correction history, exclusion and restoration, deterministic analytics, a raw measurement table, and a responsive valid-only chart. The dashboard polls for new VoiceOS measurements once per second.
 
 ## Development
 
@@ -116,7 +106,7 @@ The VoiceOS integration source is versioned alongside the LabPilot web product. 
 
 See [`integrations/labpilot-voice/README.md`](integrations/labpilot-voice/README.md) for installation, validation, and reload instructions.
 
-The next platform milestone is the Supabase production adapter and Realtime subscription connecting VoiceOS writes to the deployed LabPilot experiment workspace.
+The next platform milestone is replacing polling with a realtime event channel and generalizing the fixed EXP-042 workflow to user-created experiments.
 
 ## License
 

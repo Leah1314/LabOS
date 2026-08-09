@@ -34,6 +34,15 @@ Copy these files into a VoiceOS custom MCP folder, preserving `run.sh` and the m
 
 VoiceOS may assign a new generated folder suffix after a Studio reload. Keep this repository directory as the durable source of truth.
 
+## Connect to LabOS
+
+The integration reads and writes the deployed LabOS experiment API. In the integration settings, configure:
+
+- `LABPILOT_API_TOKEN` — required password preference; it must match the deployment secret
+- `LABPILOT_API_URL` — defaults to the production EXP-042 endpoint and normally needs no change
+
+The token is never committed to this repository. Network access is restricted by the manifest to the production LabOS domain.
+
 ## Development contract
 
 Read `AGENTS.md` completely before editing. In particular:
