@@ -19,7 +19,17 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ sampleId: "", condition: "", measurementType: "OD600", value: "", treatment: "Inulin", concentration: "", unit: "OD" });
 
-  useEffect(() => { getExperiment().then(data => { setSnapshot(data); setMessage("Experiment synced"); }).catch(error => setMessage(error.message)); }, []);
+  useEffect(() => {
+    let active = true;
+    const sync = (announce = false) => getExperiment().then(data => {
+      if (!active) return;
+      setSnapshot(data);
+      if (announce) setMessage("Experiment synced");
+    }).catch(error => { if (active) setMessage(error.message); });
+    void sync(true);
+    const timer = window.setInterval(() => void sync(), 1_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
   const valid = useMemo(() => getValidMeasurements(snapshot?.measurements ?? []), [snapshot]);
   const best = useMemo(() => getBestCondition(snapshot?.measurements ?? []), [snapshot]);
   const average = useMemo(() => getAverageMeasurement(snapshot?.measurements ?? []), [snapshot]);

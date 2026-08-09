@@ -138,7 +138,6 @@ export function esc(value: unknown): string {
   if (value === null || value === undefined) return "";
   return (
     String(value)
-      // eslint-disable-next-line no-control-regex -- stripping them is the point
       .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
       .replace(/[&<>"']/g, (char) => ESCAPES[char])
   );

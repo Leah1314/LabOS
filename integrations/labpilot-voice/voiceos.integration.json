@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "com.voiceos.generated.labpilot-voice",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "name": "LabPilot Voice",
   "summary": "Capture EXP-042 measurements hands-free with safe parsing, duplicate protection, and a live OD600 experiment view.",
-  "description": "A production-polished local voice workflow for the fixed EXP-042 Inulin Bacterial Growth Experiment. It preserves measurement history, rejects uncertain numbers, and keeps scientific queries from interrupting the active session.",
+  "description": "A production-polished connected voice workflow for the fixed EXP-042 Inulin Bacterial Growth Experiment. It writes to the shared LabOS dataset, rejects uncertain numbers, and keeps scientific queries from interrupting the active session.",
   "categories": [
     "Productivity",
     "Science"
@@ -20,6 +20,32 @@
       "run.sh"
     ]
   },
+  "permissions": [
+    {
+      "kind": "network",
+      "domains": [
+        "labpilot-voice.leah-1314.chatgpt.site"
+      ]
+    }
+  ],
+  "preferences": [
+    {
+      "name": "LABPILOT_API_TOKEN",
+      "title": "LabOS connection token",
+      "description": "Authenticates VoiceOS to the private LabOS experiment API.",
+      "type": "password",
+      "required": true,
+      "placeholder": "Paste the token configured for the LabOS deployment"
+    },
+    {
+      "name": "LABPILOT_API_URL",
+      "title": "LabOS API URL",
+      "description": "Override only when connecting to another LabOS deployment.",
+      "type": "text",
+      "required": false,
+      "default": "https://labpilot-voice.leah-1314.chatgpt.site/api/experiment"
+    }
+  ],
   "tools": [
     {
       "name": "start_lab_session",

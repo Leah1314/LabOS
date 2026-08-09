@@ -75,6 +75,17 @@ export async function restoreMeasurement(measurementId: string) {
   return getMeasurementsForExperiment();
 }
 
+export async function removeMeasurement(measurementId: string) {
+  const db = getDb();
+  const matches = await db.select().from(measurements).where(eq(measurements.id, measurementId)).limit(2);
+  if (matches.length !== 1) throw new Error(matches.length ? "Removal is ambiguous." : "Measurement not found.");
+  await db.batch([
+    db.delete(measurementRevisions).where(eq(measurementRevisions.measurementId, measurementId)),
+    db.delete(measurements).where(eq(measurements.id, measurementId)),
+  ]);
+  return getMeasurementsForExperiment();
+}
+
 export async function seedDemoMeasurements() {
   const snapshot = await getMeasurementsForExperiment();
   if (snapshot.measurements.length) return snapshot;
