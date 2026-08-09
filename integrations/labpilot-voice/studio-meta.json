@@ -1,0 +1,274 @@
+{
+  "originalPrompt": "Build an app called **LabPilot Voice** inside VoiceOS.\n\n## Product goal\n\nLabPilot Voice is a hands-free data-entry assistant for wet-lab researchers.\n\nResearchers often wear gloves, handle samples, pipette liquids, maintain sterile conditions, and move between instruments. They should be able to record experimental measurements simply by speaking instead of stopping to type into a laptop.\n\nThe core workflow is:\n\n**Voice → Structured Scientific Data → Database → Live Visualization**\n\nThe app should listen to a researcher, understand the scientific measurement they are reporting, convert the speech into structured data, save it, and immediately update a live experiment dashboard.\n\n---\n\n# Core demo\n\nA researcher says:\n\n“Sample A, one percent inulin, OD point five three.”\n\nThe system should understand this as:\n\n```json\n{\n  \"experimentId\": \"EXP-042\",\n  \"sampleId\": \"A\",\n  \"condition\": \"1% Inulin\",\n  \"treatment\": \"Inulin\",\n  \"concentration\": 1,\n  \"concentrationUnit\": \"%\",\n  \"measurementType\": \"OD600\",\n  \"value\": 0.53,\n  \"inputSource\": \"voice\"\n}\n```\n\nThe data should then be stored and immediately appear on the experiment visualization.\n\n---\n\n# Main user experience\n\nCreate a main screen called:\n\n**LabPilot Voice**\n\nAt the top show:\n\n* LabPilot Voice logo/name\n* Current experiment: `EXP-042`\n* Experiment title: `Inulin Bacterial Growth Experiment`\n* connection/status indicator\n\nThe primary interaction should be a large microphone button in the center of the screen.\n\nPossible states:\n\n### Idle\n\nDisplay:\n\n“Tap to record a measurement”\n\nLarge microphone button.\n\n### Listening\n\nDisplay:\n\n“Listening…”\n\nShow a subtle voice waveform or listening animation.\n\nDisplay live transcript underneath.\n\nExample:\n\n“Sample A, one percent inulin, OD point five three.”\n\n### Processing\n\nDisplay:\n\n“Structuring measurement…”\n\nThe system should parse the transcript into scientific fields.\n\n### Success\n\nDisplay:\n\n“Measurement recorded”\n\nThen show a structured confirmation card:\n\nSample A\n1% Inulin\nOD600: 0.53\n\nSource: Voice\n\nThe app should then return to listening/ready state quickly.\n\n---\n\n# Voice understanding\n\nThe researcher should be able to speak naturally.\n\nExamples:\n\n“Sample A, one percent inulin, OD point five three.”\n\n“Sample B, two percent inulin, OD zero point seven one.”\n\n“Control sample C, OD point four two.”\n\n“Sample D, pH six point eight.”\n\n“Sample A, temperature thirty seven degrees Celsius.”\n\n“Sample B, fluorescence twelve hundred forty.”\n\nThe system should extract relevant scientific values even if the researcher does not use exactly the same sentence format every time.\n\n---\n\n# Scientific data parser\n\nFor each spoken observation, try to extract:\n\n```typescript\ninterface LabObservation {\n  id?: string;\n\n  experimentId: string;\n\n  sampleId: string;\n\n  condition?: string;\n\n  treatment?: string;\n\n  concentration?: number;\n\n  concentrationUnit?: string;\n\n  measurementType: string;\n\n  value: number;\n\n  measurementUnit?: string;\n\n  inputSource: \"voice\";\n\n  rawTranscript: string;\n\n  timestamp: string;\n}\n```\n\nNormalize common scientific terminology.\n\nExamples:\n\n“OD”\n“OD six hundred”\n“optical density”\n“OD600”\n\nshould normally map to:\n\n`OD600`\n\nNormalize spoken numbers.\n\nExamples:\n\n“point five three” → `0.53`\n\n“zero point seven one” → `0.71`\n\n“one percent” → `1%`\n\n“twenty microliters” → `20 µL`\n\n“thirty seven degrees Celsius” → `37 °C`\n\n---\n\n# Validation\n\nDo not silently save obviously incomplete scientific measurements.\n\nIf the system is confident, save automatically.\n\nFor example:\n\n“Sample A, OD point five three.”\n\n→ save directly.\n\nIf an important field is unclear, ask a short voice clarification.\n\nExample:\n\nResearcher:\n\n“Sample B, OD point six.”\n\nLabPilot:\n\n“Recorded Sample B, OD600 0.6.”\n\nBut if the researcher says:\n\n“OD point six.”\n\nLabPilot should ask:\n\n“Which sample?”\n\nAfter the user replies:\n\n“Sample B.”\n\ncombine the context and save the observation.\n\nKeep clarification extremely short because the researcher may be actively working.\n\n---\n\n# Voice confirmation\n\nAfter successfully recording a measurement, provide a short spoken confirmation.\n\nExample:\n\n“Recorded. Sample A, OD600 0.53.”\n\nDo not read the whole JSON object aloud.\n\nThe confirmation should take roughly 1–2 seconds.\n\n---\n\n# Experiment dashboard\n\nOn the same screen, or directly below the voice interface, create a live experiment visualization.\n\nFor the initial demo experiment use:\n\n**Experiment ID:** EXP-042\n\n**Experiment:** Effect of Inulin Concentration on Bacterial Growth\n\nSamples:\n\n* Sample A — Control\n* Sample B — 0.5% Inulin\n* Sample C — 1% Inulin\n* Sample D — 2% Inulin\n\nPrimary measurement:\n\n`OD600`\n\nCreate a live chart showing OD600 values for the samples.\n\nExample data:\n\nControl → 0.38\n0.5% Inulin → 0.47\n1% Inulin → 0.61\n2% Inulin → 0.74\n\nWhen a new measurement is recorded through voice, the chart should update automatically without requiring a page refresh.\n\n---\n\n# Recent observations\n\nBelow the chart show a small section:\n\n**Recent Measurements**\n\nExample:\n\nSample D\n2% Inulin\nOD600 0.74\n🎙 Voice · just now\n\nSample C\n1% Inulin\nOD600 0.61\n🎙 Voice · 18 sec ago\n\nSample B\n0.5% Inulin\nOD600 0.47\n🎙 Voice · 42 sec ago\n\nNewest entries should appear first.\n\n---\n\n# Database\n\nCreate a database/table for observations with approximately this structure:\n\n```sql\nobservations\n\nid\nexperiment_id\nsample_id\ncondition\ntreatment\nconcentration\nconcentration_unit\nmeasurement_type\nvalue\nmeasurement_unit\ninput_source\nraw_transcript\ncreated_at\n```\n\nEvery voice measurement should save:\n\n* structured scientific data\n* original transcript\n* timestamp\n* experiment ID\n\nKeep the raw transcript so users can audit how the structured measurement was generated.\n\n---\n\n# Commands\n\nSupport a small number of useful voice commands in addition to measurement recording.\n\n### Undo\n\nResearcher:\n\n“Undo the last measurement.”\n\nLabPilot should delete or mark the most recent voice observation as undone.\n\nReply:\n\n“Last measurement removed.”\n\n### Query latest value\n\nResearcher:\n\n“What is the latest OD for Sample A?”\n\nReply using the database:\n\n“Sample A's latest OD600 is 0.53.”\n\n### Switch sample\n\nResearcher:\n\n“Show Sample B.”\n\nHighlight or filter Sample B on the dashboard.\n\nThese are secondary to the core measurement-recording experience.\n\n---\n\n# UI style\n\nDesign the interface specifically for use inside a laboratory.\n\nThe UI should feel:\n\n* modern\n* scientific\n* clean\n* minimal\n* professional\n* high contrast\n* easy to read from a distance\n* usable while wearing gloves\n* not overly decorative\n* not like a generic chatbot\n\nUse large touch targets.\n\nThe microphone should be the dominant interaction.\n\nAvoid crowded menus.\n\nThink of the product as a combination of:\n\n**laboratory instrument UI + modern AI assistant + live scientific dashboard**\n\nThe user should immediately understand:\n\n“I speak experiment data here, and LabPilot records it.”\n\n---\n\n# Demo sequence\n\nThe finished app should support this exact hackathon demo.\n\nStart with the chart empty.\n\nUser says:\n\n“Sample A, control, OD point three eight.”\n\n→ Record Sample A\n→ chart updates\n\nThen:\n\n“Sample B, zero point five percent inulin, OD point four seven.”\n\n→ chart updates\n\nThen:\n\n“Sample C, one percent inulin, OD point six one.”\n\n→ chart updates\n\nThen:\n\n“Sample D, two percent inulin, OD point seven four.”\n\n→ chart updates\n\nAt the end the dashboard clearly shows the increase in bacterial growth across the inulin concentrations.\n\nThe entire demo should make the transformation visible:\n\n**spoken laboratory observation → structured scientific record → live experiment chart**\n\n---\n\n# Priority\n\nPrioritize getting this end-to-end workflow working before adding additional features:\n\n1. Voice input\n2. Speech transcript\n3. Scientific field extraction\n4. Structured JSON\n5. Database save\n6. Live dashboard update\n7. Spoken confirmation\n\nDo not spend significant time building authentication, settings pages, complex experiment management, or unrelated functionality.\n\nThe hackathon MVP should make one interaction extremely impressive:\n\n**A wet-lab researcher speaks a measurement and the laboratory dataset builds itself in real time.**",
+  "preview": {
+    "utterances": [
+      "Start lab session.",
+      "Sample C, point six one.",
+      "Actually, make that point six three."
+    ],
+    "toolPreviews": [
+      {
+        "tool": "start_lab_session",
+        "sampleArgs": {},
+        "stressCases": [
+          {
+            "state": "single",
+            "sampleArgs": {},
+            "sampleData": {
+              "observations": [
+                {
+                  "sampleId": "A",
+                  "measurementType": "OD600",
+                  "value": 0.38
+                }
+              ],
+              "session": {
+                "active": true
+              }
+            },
+            "expected": "Show LISTENING prominently, preserve Sample A, and name Sample B as next."
+          }
+        ]
+      },
+      {
+        "tool": "get_next_step",
+        "sampleArgs": {},
+        "stressCases": [
+          {
+            "state": "empty",
+            "sampleArgs": {},
+            "sampleData": {
+              "observations": []
+            },
+            "expected": "Show Sample A as the first concrete step without empty filler rows."
+          }
+        ]
+      },
+      {
+        "tool": "get_experiment_snapshot",
+        "sampleArgs": {},
+        "stressCases": [
+          {
+            "state": "empty",
+            "sampleArgs": {},
+            "sampleData": {
+              "observations": [],
+              "session": {
+                "active": true
+              }
+            },
+            "expected": "Render a compact zero-state chart, LISTENING state, Sample A next, and 0 / 4 progress."
+          }
+        ]
+      },
+      {
+        "tool": "query_sample",
+        "sampleArgs": {
+          "sampleId": "B"
+        },
+        "stressCases": [
+          {
+            "state": "single",
+            "sampleArgs": {
+              "sampleId": "B"
+            },
+            "sampleData": {
+              "observations": [
+                {
+                  "sampleId": "B",
+                  "condition": "0.5% Inulin",
+                  "measurementType": "OD600",
+                  "value": 0.47
+                }
+              ],
+              "session": {
+                "active": true
+              }
+            },
+            "expected": "Highlight the latest Sample B value while keeping the active session unchanged."
+          }
+        ]
+      },
+      {
+        "tool": "summarize_experiment",
+        "sampleArgs": {},
+        "stressCases": [
+          {
+            "state": "error",
+            "sampleArgs": {},
+            "sampleData": {
+              "error": "Local storage unavailable",
+              "message": "Saved observations could not be analyzed."
+            },
+            "expected": "Show a branded error and explicitly avoid fabricated scientific insight."
+          }
+        ]
+      },
+      {
+        "tool": "compare_samples",
+        "sampleArgs": {
+          "sampleA": "A",
+          "sampleB": "D"
+        },
+        "stressCases": [
+          {
+            "state": "single",
+            "sampleArgs": {
+              "sampleA": "A",
+              "sampleB": "D"
+            },
+            "sampleData": {
+              "observations": [
+                {
+                  "sampleId": "A",
+                  "measurementType": "OD600",
+                  "value": 0.38
+                }
+              ]
+            },
+            "expected": "Identify Sample D as missing without interrupting the session."
+          }
+        ]
+      },
+      {
+        "tool": "interpret_observation",
+        "sampleArgs": {
+          "transcript": "Sample C, point six one."
+        },
+        "stressCases": [
+          {
+            "state": "error",
+            "sampleArgs": {
+              "transcript": "Sample C, point six [unclear]."
+            },
+            "sampleData": {
+              "error": "Speech recognition uncertainty",
+              "message": "The numerical value was unclear and must not be saved.",
+              "complete": false,
+              "clarification": "What value for Sample C?",
+              "draft": {
+                "sampleId": "C",
+                "measurementType": "OD600"
+              }
+            },
+            "expected": "Show NEEDS CLARIFICATION and never manufacture or save a numeric value."
+          }
+        ]
+      },
+      {
+        "tool": "record_observation",
+        "sampleArgs": {
+          "experimentId": "EXP-042",
+          "sampleId": "C",
+          "condition": "1% Inulin",
+          "treatment": "Inulin",
+          "concentration": 1,
+          "concentrationUnit": "%",
+          "measurementType": "OD600",
+          "value": 0.61,
+          "rawTranscript": "Sample C, point six one."
+        },
+        "stressCases": [
+          {
+            "state": "long-text",
+            "sampleArgs": {
+              "experimentId": "EXP-042",
+              "sampleId": "FERMENTATION-VESSEL-ALPHA-WITH-A-VERY-LONG-LABEL",
+              "condition": "One percent inulin under an intentionally long anaerobic incubation condition that exceeds one hundred characters and tests narrow confirmation rendering.",
+              "measurementType": "OD600",
+              "value": 0.5312,
+              "rawTranscript": "This pending observation contains an intentionally extended scientific transcript of more than one hundred characters so the confirmation remains narrow, editable, and clear."
+            },
+            "sampleData": {
+              "rawTranscript": "This saved voice transcript intentionally exceeds one hundred characters to demonstrate that repeated scientific measurements remain readable, safely truncated, and fully preserved in local history.",
+              "deduplicated": false,
+              "repeatedMeasurement": true
+            },
+            "expected": "Keep all scientific fields editable, truncate safely, and preserve confirmation space."
+          }
+        ]
+      },
+      {
+        "tool": "correct_last",
+        "sampleArgs": {
+          "expectedId": "obs-demo-001",
+          "previousSummary": "Sample C · 1% Inulin · OD600 0.51",
+          "experimentId": "EXP-042",
+          "sampleId": "C",
+          "condition": "1% Inulin",
+          "treatment": "Inulin",
+          "concentration": 1,
+          "concentrationUnit": "%",
+          "measurementType": "OD600",
+          "value": 0.61,
+          "rawTranscript": "Actually, make that point six one."
+        },
+        "stressCases": [
+          {
+            "state": "long-text",
+            "sampleArgs": {
+              "expectedId": "obs-demo-001",
+              "previousSummary": "Sample C under a deliberately long prior condition description that exceeds one hundred characters and remains visually subordinate.",
+              "experimentId": "EXP-042",
+              "sampleId": "C-LONG-SAMPLE-IDENTIFIER",
+              "condition": "A revised condition description longer than one hundred characters to verify the correction confirmation stays narrow and legible.",
+              "measurementType": "OD600",
+              "value": 0.61,
+              "rawTranscript": "Actually, make that point six one, with a deliberately long correction transcript exceeding one hundred characters while the revised scientific value remains prominent."
+            },
+            "sampleData": {
+              "condition": "This revised condition description intentionally contains more than one hundred characters to prove the corrected measurement stays prominent while pathological scientific text is truncated safely.",
+              "corrected": true
+            },
+            "expected": "Emphasize the corrected value, keep the prior record visible, and reserve the approval footer."
+          }
+        ]
+      },
+      {
+        "tool": "undo_last",
+        "sampleArgs": {
+          "expectedId": "obs-demo-001",
+          "sampleId": "C",
+          "condition": "1% Inulin",
+          "measurementType": "OD600",
+          "value": 0.61,
+          "rawTranscript": "Sample C, point six one."
+        },
+        "stressCases": [
+          {
+            "state": "long-text",
+            "sampleArgs": {
+              "expectedId": "obs-demo-001",
+              "sampleId": "FERMENTATION-VESSEL-ALPHA-WITH-A-VERY-LONG-LABEL",
+              "condition": "One percent inulin with an exceptionally long condition annotation that must not push the consequence control off the card.",
+              "measurementType": "OD600",
+              "value": 0.61,
+              "rawTranscript": "This transcript is intentionally longer than one hundred characters so the destructive confirmation can clamp evidence while keeping the exact record visible."
+            },
+            "sampleData": {
+              "rawTranscript": "This destructive-action evidence transcript intentionally contains well over one hundred characters to demonstrate safe clamping while the exact saved measurement and removal consequence remain visible.",
+              "undone": true
+            },
+            "expected": "Show the exact record being removed and keep the destructive consequence unmistakable."
+          }
+        ]
+      },
+      {
+        "tool": "check_readiness",
+        "sampleArgs": {},
+        "stressCases": [
+          {
+            "state": "error",
+            "sampleArgs": {},
+            "sampleData": {
+              "ready": false,
+              "error": "Local storage unavailable"
+            },
+            "expected": "Isolate the failed local database check while showing parser and voice input as ready."
+          }
+        ]
+      }
+    ]
+  },
+  "updatedAt": "2026-08-09T23:20:26.998Z"
+}

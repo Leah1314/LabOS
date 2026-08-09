@@ -110,8 +110,13 @@ npm test
 - `lib/labpilot/analytics.ts` - valid-only deterministic analysis
 - `db/schema.ts` - experiment, measurement, and revision schema
 - `drizzle/` - generated database migration
+- `integrations/labpilot-voice/` - VoiceOS MCP integration, manifest, glance cards, and Studio fixtures
 
-The next milestone is the Supabase production adapter and Realtime subscription, followed by the five VoiceOS/MCP tools defined in the product guide.
+The VoiceOS integration source is versioned alongside the LabPilot web product. VoiceOS may regenerate its local `custom-mcps` folder during Studio reloads, so the repository copy is the stable source of truth.
+
+See [`integrations/labpilot-voice/README.md`](integrations/labpilot-voice/README.md) for installation, validation, and reload instructions.
+
+The next platform milestone is the Supabase production adapter and Realtime subscription connecting VoiceOS writes to the deployed LabPilot experiment workspace.
 
 ## License
 
