@@ -21,7 +21,7 @@ Voice input is not implemented yet. The first product slice proves the shared da
 Manual measurement input
           │
           ▼
-Reusable LabPilot services → Supabase → measurement table + live chart
+Reusable LabPilot services → structured database → measurement table + live chart
           ▲
           │
      VoiceOS tools (later)
@@ -82,11 +82,36 @@ Database operations remain explicit and schema-bound; natural-language input wil
 
 ## Project status
 
-This repository is being initialized. The first implementation milestone is a working EXP-042 experiment page with database-backed manual entry, correction and exclusion support, a live measurement table, and a responsive chart.
+Milestone 1 is implemented as a working EXP-042 experiment workspace with database-backed manual entry, correction history, exclusion and restoration, deterministic analytics, a raw measurement table, and a responsive valid-only chart.
 
 ## Development
 
-Setup and run instructions will be added after the existing LabPilot application source and its frontend/Supabase configuration are connected to this repository.
+Requirements: Node.js 22.13 or newer.
+
+```bash
+npm install
+npm run dev
+```
+
+The current preview uses a Cloudflare D1 database through a narrow service layer so the first slice can run without external credentials. The domain functions are isolated in `lib/labpilot/server.ts`; a Supabase adapter can replace the persistence implementation without changing the manual form or future VoiceOS/MCP tools.
+
+Useful checks:
+
+```bash
+npm run build
+npm test
+```
+
+## Architecture
+
+- `app/page.tsx` - experiment workspace and manual interactions
+- `app/api/experiment/route.ts` - deterministic HTTP action boundary
+- `lib/labpilot/server.ts` - reusable experiment and measurement services
+- `lib/labpilot/analytics.ts` - valid-only deterministic analysis
+- `db/schema.ts` - experiment, measurement, and revision schema
+- `drizzle/` - generated database migration
+
+The next milestone is the Supabase production adapter and Realtime subscription, followed by the five VoiceOS/MCP tools defined in the product guide.
 
 ## License
 
