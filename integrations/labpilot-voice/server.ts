@@ -7,7 +7,7 @@ import { homedir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { renderCustom, markHtml, esc, clip } from "./widgetKit.ts";
 
-const server = new McpServer({ name: "labpilot-voice", version: "1.6.0" });
+const server = new McpServer({ name: "labpilot-voice", version: "1.6.1" });
 const ACCENT = "#3987e5";
 const EXPERIMENT_ID = "EXP-042" as const;
 const EXPERIMENT_TITLE = "Inulin Bacterial Growth Experiment";
@@ -28,11 +28,12 @@ type Database = { experimentId: typeof EXPERIMENT_ID; title: string; observation
 const DATA_FILE = path.join(homedir(), "Library", "Application Support", "LabPilot Voice", "labpilot-session.json");
 const API_URL = (process.env.LABPILOT_API_URL || "https://labpilot-voice.leah-1314.chatgpt.site/api/experiment").replace(/\/$/, "");
 const API_TOKEN = process.env.LABPILOT_API_TOKEN;
+const SITES_ACCESS_TOKEN = process.env.LABPILOT_SITES_ACCESS_TOKEN;
 type RemoteMeasurement = { id: string; sampleId: string; condition: string; treatment: string | null; concentration: number | null; concentrationUnit: string | null; measurementType: string; value: number; unit: string | null; inputSource: "manual" | "voice" | "api"; createdAt: string };
 type RemoteSnapshot = { experiment: { title: string }; measurements: RemoteMeasurement[] };
 let mutationQueue: Promise<void> = Promise.resolve();
 async function serialized<T>(fn: () => Promise<T>): Promise<T> { const run = mutationQueue.then(fn, fn); mutationQueue = run.then(() => undefined, () => undefined); return run; }
-function authHeaders() { if (!API_TOKEN) throw new Error("LABPILOT_API_TOKEN is not configured in VoiceOS preferences."); return { authorization: `Bearer ${API_TOKEN}`, "content-type": "application/json" }; }
+function authHeaders() { if (!API_TOKEN) throw new Error("LABPILOT_API_TOKEN is not configured in VoiceOS preferences."); if (!SITES_ACCESS_TOKEN) throw new Error("LABPILOT_SITES_ACCESS_TOKEN is not configured in VoiceOS preferences."); return { authorization: `Bearer ${API_TOKEN}`, "OAI-Sites-Authorization": `Bearer ${SITES_ACCESS_TOKEN}`, "content-type": "application/json" }; }
 async function api(action?: Record<string, unknown>): Promise<RemoteSnapshot> {
   const result = await fetch(API_URL, { method: action ? "POST" : "GET", headers: authHeaders(), body: action ? JSON.stringify(action) : undefined });
   const data = await result.json() as RemoteSnapshot & { error?: string };

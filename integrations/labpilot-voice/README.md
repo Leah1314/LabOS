@@ -39,6 +39,7 @@ VoiceOS may assign a new generated folder suffix after a Studio reload. Keep thi
 The integration reads and writes the deployed LabOS experiment API. In the integration settings, configure:
 
 - `LABPILOT_API_TOKEN` — required password preference; it must match the deployment secret
+- `LABPILOT_SITES_ACCESS_TOKEN` — required password preference for the private Sites access gate
 - `LABPILOT_API_URL` — defaults to the production EXP-042 endpoint and normally needs no change
 
 The token is never committed to this repository. Network access is restricted by the manifest to the production LabOS domain.
