@@ -11,9 +11,9 @@ export async function POST(request: Request) {
   const denied = authorize(request);
   if (denied) return denied;
   try {
-    const body = await request.json() as { action?: string; input?: RecordMeasurementInput; measurementId?: string; value?: number; reason?: string };
+    const body = await request.json() as { action?: string; input?: RecordMeasurementInput; measurementId?: string; value?: number; reason?: string; source?: "manual" | "voice" | "api" };
     if (body.action === "record" && body.input) return Response.json(await recordMeasurement(body.input), { status: 201 });
-    if (body.action === "correct" && body.measurementId && typeof body.value === "number") return Response.json(await correctMeasurement(body.measurementId, body.value));
+    if (body.action === "correct" && body.measurementId && typeof body.value === "number") return Response.json(await correctMeasurement(body.measurementId, body.value, body.source));
     if (body.action === "exclude" && body.measurementId && body.reason) return Response.json(await excludeMeasurement(body.measurementId, body.reason));
     if (body.action === "restore" && body.measurementId) return Response.json(await restoreMeasurement(body.measurementId));
     if (body.action === "remove" && body.measurementId) return Response.json(await removeMeasurement(body.measurementId));

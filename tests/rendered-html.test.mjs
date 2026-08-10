@@ -29,6 +29,9 @@ test("LabPilot workspace includes the milestone-one product surface", async () =
   assert.match(voiceServer, /action: "record"/);
   assert.match(voiceServer, /action: "correct"/);
   assert.match(voiceServer, /action: "remove"/);
+  assert.match(voiceServer, /const previous = db\.baseline/);
+  assert.doesNotMatch(voiceServer, /const before = await api\(\)/);
+  assert.match(voiceServer, /source: "voice"/);
   const manifest = JSON.parse(manifestText);
   assert.deepEqual(manifest.permissions, [{ kind: "network", domains: ["labpilot-voice.leah-1314.chatgpt.site"] }]);
   assert.equal(manifest.preferences.find(item => item.name === "LABPILOT_API_TOKEN")?.type, "password");

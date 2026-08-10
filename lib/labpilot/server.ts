@@ -51,14 +51,14 @@ export async function recordMeasurement(input: RecordMeasurementInput) {
   return getMeasurementsForExperiment();
 }
 
-export async function correctMeasurement(measurementId: string, value: number) {
+export async function correctMeasurement(measurementId: string, value: number, source: "manual" | "voice" | "api" = "manual") {
   if (!Number.isFinite(value) || value < 0) throw new Error("Corrected value must be a non-negative number.");
   const db = getDb();
   const matches = await db.select().from(measurements).where(eq(measurements.id, measurementId)).limit(2);
   if (matches.length !== 1) throw new Error(matches.length ? "Correction is ambiguous." : "Measurement not found.");
   const now = new Date().toISOString();
   await db.batch([
-    db.insert(measurementRevisions).values({ id: crypto.randomUUID(), measurementId, previousValue: matches[0].value, revisedValue: value, source: "manual", createdAt: now }),
+    db.insert(measurementRevisions).values({ id: crypto.randomUUID(), measurementId, previousValue: matches[0].value, revisedValue: value, source, createdAt: now }),
     db.update(measurements).set({ value, updatedAt: now }).where(eq(measurements.id, measurementId)),
   ]);
   return getMeasurementsForExperiment();
