@@ -7,7 +7,7 @@ import { homedir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { renderCustom, markHtml, esc, clip } from "./widgetKit.ts";
 
-const server = new McpServer({ name: "labpilot-voice", version: "1.6.1" });
+const server = new McpServer({ name: "labpilot-voice", version: "1.6.2" });
 const ACCENT = "#3987e5";
 const EXPERIMENT_ID = "EXP-042" as const;
 const EXPERIMENT_TITLE = "Inulin Bacterial Growth Experiment";
@@ -23,7 +23,7 @@ const SAMPLE_META: Record<string, { condition: string; treatment?: string; conce
 type VoiceState = "READY" | "LISTENING" | "PROCESSING" | "RECORDED" | "NEEDS CLARIFICATION" | "COMPLETE";
 type Observation = { id: string; experimentId: typeof EXPERIMENT_ID; sampleId: string; condition?: string; treatment?: string; concentration?: number; concentrationUnit?: string; measurementType: string; value: number; measurementUnit?: string; inputSource: "voice"; rawTranscript: string; timestamp: string };
 type Session = { active: boolean; startedAt?: string; completedAt?: string };
-type Database = { experimentId: typeof EXPERIMENT_ID; title: string; observations: Observation[]; session: Session };
+type Database = { experimentId: typeof EXPERIMENT_ID; title: string; observations: Observation[]; baseline: Observation[]; session: Session };
 
 const DATA_FILE = path.join(homedir(), "Library", "Application Support", "LabPilot Voice", "labpilot-session.json");
 const API_URL = (process.env.LABPILOT_API_URL || "https://labpilot-voice.leah-1314.chatgpt.site/api/experiment").replace(/\/$/, "");
@@ -52,10 +52,12 @@ async function readSession(): Promise<Session> {
   }
 }
 async function writeSession(session: Session) { await mkdir(path.dirname(DATA_FILE), { recursive: true }); const temp = `${DATA_FILE}.${randomUUID()}.tmp`; await writeFile(temp, JSON.stringify({ session }, null, 2), "utf8"); await rename(temp, DATA_FILE); }
-async function load(): Promise<Database> { const [snapshot, session] = await Promise.all([api(), readSession()]); return { experimentId: EXPERIMENT_ID, title: snapshot.experiment.title || EXPERIMENT_TITLE, observations: snapshot.measurements.map(fromRemote), session }; }
+async function load(): Promise<Database> { const [snapshot, session] = await Promise.all([api(), readSession()]); const observations = snapshot.measurements.map(fromRemote); return { experimentId: EXPERIMENT_ID, title: snapshot.experiment.title || EXPERIMENT_TITLE, observations, baseline: observations.map((item) => ({ ...item })), session }; }
 async function save(db: Database) {
-  const before = await api();
-  const previous = before.measurements.map(fromRemote);
+  // Diff against the snapshot that this tool invocation actually loaded. A
+  // fresh pre-save read could contain a simultaneous web entry and make it
+  // look like VoiceOS removed that row.
+  const previous = db.baseline;
   const previousById = new Map(previous.map((item) => [item.id, item]));
   const nextById = new Map(db.observations.map((item) => [item.id, item]));
   const removed = previous.find((item) => !nextById.has(item.id));
@@ -63,7 +65,7 @@ async function save(db: Database) {
   const corrected = db.observations.find((item) => previousById.has(item.id) && previousById.get(item.id)!.value !== item.value);
   if ([removed, added, corrected].filter(Boolean).length > 1) throw new Error("Only one VoiceOS measurement mutation can be saved at a time.");
   if (removed) await api({ action: "remove", measurementId: removed.id });
-  if (corrected) await api({ action: "correct", measurementId: corrected.id, value: corrected.value });
+  if (corrected) await api({ action: "correct", measurementId: corrected.id, value: corrected.value, source: "voice" });
   if (added) await api({ action: "record", input: { experimentId: "exp-042", sampleId: added.sampleId, condition: added.condition || "Voice observation", organism: "Bifidobacterium", treatment: added.treatment || null, concentration: added.concentration ?? null, concentrationUnit: added.concentrationUnit || null, measurementType: added.measurementType, value: added.value, unit: added.measurementUnit || null, inputSource: "voice" } });
   await writeSession(db.session);
 }

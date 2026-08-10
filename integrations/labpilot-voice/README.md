@@ -44,6 +44,8 @@ The integration reads and writes the deployed LabOS experiment API. In the integ
 
 The token is never committed to this repository. Network access is restricted by the manifest to the production LabOS domain.
 
+VoiceOS diffs each confirmed mutation against the snapshot loaded for that tool call. Concurrent entries made in the web workspace are therefore never interpreted as VoiceOS removals, and voice corrections are identified as `voice` in the revision audit trail.
+
 ## Development contract
 
 Read `AGENTS.md` completely before editing. In particular:

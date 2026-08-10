@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "com.voiceos.generated.labpilot-voice",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "name": "LabPilot Voice",
   "summary": "Capture EXP-042 measurements hands-free with safe parsing, duplicate protection, and a live OD600 experiment view.",
   "description": "A production-polished connected voice workflow for the fixed EXP-042 Inulin Bacterial Growth Experiment. It writes to the shared LabOS dataset, rejects uncertain numbers, and keeps scientific queries from interrupting the active session.",
